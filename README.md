@@ -261,10 +261,7 @@ Things that would be worth doing next, roughly in order of impact:
 7. **No automated tests.** A lightweight smoke-test suite (e.g. Playwright) covering task creation, recurrence behavior, and offline loading would catch regressions early.
 8. **Light theme exists now, but is a broad CSS override rather than a from-scratch design.** It re-themes the whole app in one pass (backgrounds, text, glass panels) so it's fully usable, but hasn't had the same per-component design polish as the dark "liquid glass" theme — expect it to look a bit more generic in places.
 9. **Multi-language support covers the main navigation and dashboard chrome, not every screen yet.** English, French, and Arabic (plus Persian) are selectable in Settings, but deeper per-tab content (Study/Fitness/Learning internals, longer help text, etc.) is still Persian-only and needs incremental translation.
-10. **Accessibility pass.** Labels/`aria-*` attributes for screen readers, and keyboard navigation for the modal/nav components, aren't fully audited yet.
-
-### License
-No license file is currently included — add one (MIT is a common, permissive choice for a personal project like this) before treating this as open source.
+10. **Accessibility pass.** Labels/`aria-*` attributes for screen readers, and keyboard navigation for the modal/nav components, aren't fully audited ye
 
 ---
 
@@ -388,6 +385,3 @@ git diff        # تفاوت خط‌به‌خط
 8. **تم روشن اضافه شده، ولی بیشتر یه override کلی CSSه تا طراحی اختصاصی** — کل اپ رو یکجا قابل‌استفاده می‌کنه، اما هنوز به‌اندازه‌ی تم تیره‌ی «لیکویید گلس» ریزه‌کاری نداره.
 9. **پشتیبانی چندزبانه فعلاً فقط ناوبری اصلی و داشبورد رو پوشش می‌ده** — انگلیسی، فرانسه و عربی (به‌علاوه فارسی) از تنظیمات قابل انتخابن، اما محتوای عمیق‌تر هر تب (مثلاً بخش‌های داخلی مطالعه/ورزش/یادگیری) هنوز فقط فارسیه و نیاز به ترجمه‌ی تدریجی داره.
 10. **بررسی دسترسی‌پذیری (Accessibility)** انجام نشده — لیبل‌ها و ناوبری با کیبورد هنوز کامل چک نشدن.
-
-### مجوز
-فعلاً فایل لایسنسی برای این پروژه گذاشته نشده — قبل از اینکه بهش به‌عنوان اوپن‌سورس نگاه کنی، یه لایسنس (مثلاً MIT، که برای پروژه‌های شخصی رایجه) بهش اضافه کن.
