@@ -6,3 +6,11 @@ compatibility_date = "2024-09-23"
 binding = "DB"                                  # accessed in code as env.DB
 database_name = "lifeflow-db"
 database_id = "8a06d779-6e21-49aa-bab0-ee4fde1a3eb3"
+
+[dev]
+# Local development settings
+local_port = 8787
+
+[[migrations]]
+tag = "v1"
+new_classes = ["SyncWorker"]
