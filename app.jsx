@@ -117,31 +117,6 @@ function loadSavedData() {
   }
 }
 
-// ============ Cloud sync (Cloudflare Worker + D1) ============
-const SYNC_CONFIG_KEY = "lifeflow_sync_v1";
-function loadSyncConfig() {
-  try {
-    const raw = storage.get(SYNC_CONFIG_KEY);
-    return raw ? JSON.parse(raw) : { url: "", code: "" };
-  } catch (e) {
-    return { url: "", code: "" };
-  }
-}
-function saveSyncConfig(cfg) {
-  try { storage.set(SYNC_CONFIG_KEY, JSON.stringify(cfg)); return true; } catch (e) { return false; }
-}
-function genSyncCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous 0/O or 1/I
-  const arr = new Uint32Array(8);
-  if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(arr);
-  let s = "";
-  for (let i = 0; i < 8; i++) {
-    const n = arr[i] || Math.floor(Math.random() * 4294967296);
-    s += chars[n % chars.length];
-  }
-  return s.slice(0, 4) + "-" + s.slice(4, 8);
-}
-
 // ============ App settings: theme + language ============
 const SETTINGS_KEY = "lifeflow_settings_v1";
 const LANGUAGES = [
@@ -198,7 +173,6 @@ const I18N = {
   retry: { fa: "دوباره", en: "Retry", fr: "Réessayer", ar: "إعادة المحاولة" },
   ai_no_key: { fa: "برای دریافت خلاصه، اول از بخش تنظیمات یه کلید API وارد کن.", en: "To get a summary, first add an API key in Settings.", fr: "Pour obtenir un résumé, ajoutez d'abord une clé API dans les Paramètres.", ar: "للحصول على ملخص، أضف أولاً مفتاح API في الإعدادات." },
   open_settings: { fa: "برو به تنظیمات", en: "Open settings", fr: "Ouvrir les paramètres", ar: "فتح الإعدادات" },
-  cloud_sync: { fa: "همگام‌سازی ابری", en: "Cloud sync", fr: "Synchronisation cloud", ar: "المزامنة السحابية" },
 };
 function t(key, lang) {
   const entry = I18N[key];
@@ -2076,51 +2050,6 @@ function BackupModal({ onClose, currentData, onRestore, onDownload }) {
   const [confirming, setConfirming] = useState(false);
   const fileInputRef = React.useRef(null);
 
-  // ---- Cloud sync (Cloudflare Worker + D1) ----
-  const [syncCfg, setSyncCfg] = useState(() => {
-    const cfg = loadSyncConfig();
-    if (!cfg.code) cfg.code = genSyncCode();
-    return cfg;
-  });
-  const [syncBusy, setSyncBusy] = useState(false);
-  const [syncMsg, setSyncMsg] = useState("");
-  const [syncErr, setSyncErr] = useState("");
-  const [confirmPull, setConfirmPull] = useState(false);
-  useEffect(() => { saveSyncConfig(syncCfg); }, [syncCfg]);
-
-  const copyCode = () => {
-    if (navigator.clipboard) navigator.clipboard.writeText(syncCfg.code).catch(() => {});
-    setSyncMsg("کد کپی شد."); setTimeout(() => setSyncMsg(""), 1500);
-  };
-  const pushToCloud = async () => {
-    setSyncErr(""); setSyncMsg(""); setSyncBusy(true);
-    try {
-      const res = await fetch(`${syncCfg.url.replace(/\/$/, "")}/sync`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: syncCfg.code, data: currentData }),
-      });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `خطای سرور (${res.status})`);
-      setSyncMsg("با موفقیت روی فضای ابری ذخیره شد. ✅");
-    } catch (e) {
-      setSyncErr(e.message === "Failed to fetch" ? "اتصال به Worker برقرار نشد — آدرس رو چک کن." : e.message);
-    } finally { setSyncBusy(false); }
-  };
-  const pullFromCloud = async () => {
-    setSyncErr(""); setSyncMsg(""); setSyncBusy(true);
-    try {
-      const res = await fetch(`${syncCfg.url.replace(/\/$/, "")}/sync?code=${encodeURIComponent(syncCfg.code)}`);
-      if (res.status === 404) throw new Error("هنوز داده‌ای با این کد ذخیره نشده — اول از یه دستگاه دیگه «ارسال» بزن.");
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `خطای سرور (${res.status})`);
-      const result = await res.json();
-      onRestore(result.data);
-      setSyncMsg("داده‌ها از فضای ابری بازگردانی شد. ✅");
-      setConfirmPull(false);
-      setTimeout(() => { onClose(); }, 1100);
-    } catch (e) {
-      setSyncErr(e.message === "Failed to fetch" ? "اتصال به Worker برقرار نشد — آدرس رو چک کن." : e.message);
-    } finally { setSyncBusy(false); }
-  };
-
   const persist = (list) => {
     setBackups(list);
     const ok = saveBackupsList(list);
@@ -2197,46 +2126,6 @@ function BackupModal({ onClose, currentData, onRestore, onDownload }) {
 
   return (
     <ModalShell title="مدیریت بکاپ" onClose={onClose}>
-      {/* ---- Cloud sync (Cloudflare) ---- */}
-      <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/[0.04] p-3.5 mb-5">
-        <p className="text-xs font-bold text-cyan-300 flex items-center gap-1.5 mb-2"><Ic name="cloud" size={14} /> همگام‌سازی ابری (Cloudflare)</p>
-        <p className="text-[11px] text-slate-400 mb-3 leading-5">آدرس Worker خودت رو یه بار وارد کن، بعد با همین «کد همگام‌سازی» تو هر دستگاه دیگه‌ای که این کد رو وارد کنی، داده‌هات رو می‌گیری.</p>
-
-        <label className="block text-[11px] text-slate-500 mb-1">آدرس Worker</label>
-        <input type="url" placeholder="https://lifeflow-sync.your-name.workers.dev" value={syncCfg.url}
-          onChange={(e) => setSyncCfg((c) => ({ ...c, url: e.target.value.trim() }))}
-          className="w-full bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-white text-xs outline-none mb-3" dir="ltr" />
-
-        <label className="block text-[11px] text-slate-500 mb-1">کد همگام‌سازی</label>
-        <div className="flex items-center gap-2 mb-3">
-          <input type="text" value={syncCfg.code} onChange={(e) => setSyncCfg((c) => ({ ...c, code: e.target.value.toUpperCase() }))}
-            className="flex-1 bg-white/[0.05] border border-white/10 rounded-lg px-3 py-2 text-white text-xs outline-none font-mono tracking-wider" dir="ltr" />
-          <button type="button" onClick={copyCode} className="w-9 h-9 shrink-0 rounded-lg bg-white/[0.06] border border-white/10 flex items-center justify-center"><Ic name="copy" size={14} /></button>
-        </div>
-
-        {syncErr && <p className="text-[11px] text-rose-400 mb-2">{syncErr}</p>}
-        {syncMsg && <p className="text-[11px] text-emerald-400 mb-2">{syncMsg}</p>}
-
-        <div className="grid grid-cols-2 gap-2">
-          <button type="button" disabled={syncBusy || !syncCfg.url} onClick={pushToCloud}
-            className="flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-bold text-white disabled:opacity-40"
-            style={{ background: "linear-gradient(135deg,#22D3EE,#0891B2)" }}>
-            <Ic name="upload" size={13} /> ارسال به ابر
-          </button>
-          {!confirmPull ? (
-            <button type="button" disabled={syncBusy || !syncCfg.url} onClick={() => setConfirmPull(true)}
-              className="flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-bold text-cyan-300 bg-white/[0.05] border border-white/10 disabled:opacity-40">
-              <Ic name="download" size={13} /> دریافت از ابر
-            </button>
-          ) : (
-            <button type="button" disabled={syncBusy} onClick={pullFromCloud}
-              className="flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-xs font-bold text-white bg-rose-500/80">
-              مطمئنی؟ (جایگزین می‌شه)
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Download current data — existing feature, unchanged */}
       <button type="button" onClick={onDownload} className="w-full flex items-center justify-center gap-2 rounded-xl py-3 mb-4 text-sm font-semibold bg-white/[0.05] border border-white/10 hover:bg-white/10 transition">
         <Ic name="download" size={15} /> دانلود بکاپ فعلی
