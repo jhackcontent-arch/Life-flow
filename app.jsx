@@ -1054,35 +1054,59 @@ function AddBookModal({ onClose, onAdd }) {
 }
 
 function VideoCard({ v, onToggleWatched, onDelete }) {
+  const [showModal, setShowModal] = useState(false);
+  
   return (
-    <GlassCard className="p-3 flex gap-3">
-      {v.videoId ? (
-        <a href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noreferrer" className="shrink-0 relative">
-          <img src={`https://img.youtube.com/vi/${v.videoId}/hqdefault.jpg`} alt={v.title} className="w-24 h-16 object-cover rounded-lg" />
-          <span className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg"><Ic name="external-link" size={14} className="text-white" /></span>
-        </a>
-      ) : v.fileData ? (
-        <video src={v.fileData} controls className="w-24 h-16 object-cover rounded-lg bg-black shrink-0" />
-      ) : (
-        <div className="w-24 h-16 rounded-lg bg-red-500/15 flex items-center justify-center shrink-0"><Ic name="play" size={18} className="text-red-400" /></div>
-      )}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-100 truncate">{v.title}</p>
-        {v.watchAt && <p className="text-[11px] text-cyan-300 mt-0.5 flex items-center gap-1"><Ic name="clock" size={11} />{formatWhen(v.watchAt)}</p>}
-        {v.videoId && (
-          <a href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noreferrer" className="text-[11px] text-fuchsia-300 flex items-center gap-1 mt-1">
-            مشاهده در یوتیوب <Ic name="external-link" size={11} />
-          </a>
+    <>
+      <GlassCard className="p-3 flex gap-3 group hover:scale-[1.02] transition-all duration-300">
+        {v.videoId ? (
+          <div onClick={() => setShowModal(true)} className="shrink-0 relative cursor-pointer group/video">
+            <img src={`https://img.youtube.com/vi/${v.videoId}/hqdefault.jpg`} alt={v.title} className="w-24 h-16 object-cover rounded-lg" />
+            <span className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg opacity-0 group-hover/video:opacity-100 transition-opacity">
+              <Ic name="play" size={20} className="text-white" />
+            </span>
+          </div>
+        ) : v.fileData ? (
+          <video src={v.fileData} controls className="w-24 h-16 object-cover rounded-lg bg-black shrink-0" />
+        ) : (
+          <div className="w-24 h-16 rounded-lg bg-red-500/15 flex items-center justify-center shrink-0"><Ic name="play" size={18} className="text-red-400" /></div>
         )}
-        {v.fileData && <p className="text-[11px] text-slate-500 mt-1">فایل محلی (روی همین گوشی/مرورگر)</p>}
-      </div>
-      <div className="flex flex-col items-center gap-2 shrink-0 self-center">
-        <button onClick={onToggleWatched} className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: v.watched ? "#22D3EE" : "rgba(255,255,255,.08)" }}>
-          {v.watched && <Ic name="check" size={14} color="#0A0A0A" strokeWidth={3} />}
-        </button>
-        <button onClick={() => onDelete(v.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-rose-400/80 hover:bg-rose-500/10"><Ic name="trash" size={13} /></button>
-      </div>
-    </GlassCard>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-slate-100 truncate">{v.title}</p>
+          {v.watchAt && <p className="text-[11px] text-cyan-300 mt-0.5 flex items-center gap-1"><Ic name="clock" size={11} />{formatWhen(v.watchAt)}</p>}
+          {v.videoId && (
+            <button onClick={() => setShowModal(true)} className="text-[11px] text-fuchsia-300 flex items-center gap-1 mt-1 hover:text-fuchsia-200 transition-colors">
+              پخش در برنامه <Ic name="play" size={11} />
+            </button>
+          )}
+          {v.fileData && <p className="text-[11px] text-slate-500 mt-1">فایل محلی (روی همین گوشی/مرورگر)</p>}
+        </div>
+        <div className="flex flex-col items-center gap-2 shrink-0 self-center">
+          <button onClick={onToggleWatched} className="w-7 h-7 rounded-full flex items-center justify-center hover:scale-110 transition-transform" style={{ background: v.watched ? "#22D3EE" : "rgba(255,255,255,.08)" }}>
+            {v.watched && <Ic name="check" size={14} color="#0A0A0A" strokeWidth={3} />}
+          </button>
+          <button onClick={() => onDelete(v.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-rose-400/80 hover:bg-rose-500/10 hover:scale-110 transition-transform"><Ic name="trash" size={13} /></button>
+        </div>
+      </GlassCard>
+      
+      {/* مودال پخش ویدیو */}
+      {showModal && v.videoId && (
+        <div className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
+          <div className="relative w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/20 hover:bg-rose-500 flex items-center justify-center transition-colors">
+              <Ic name="x" size={20} className="text-white" />
+            </button>
+            <iframe 
+              src={`https://www.youtube.com/embed/${v.videoId}?autoplay=1`} 
+              className="w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title={v.title}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 function AddVideoModal({ onClose, onAdd }) {
@@ -1147,24 +1171,30 @@ function AddVideoModal({ onClose, onAdd }) {
 
 function PodcastCard({ p, onToggleListened, onDelete }) {
   return (
-    <GlassCard className="p-3 flex items-center gap-3">
-      <div className="w-11 h-11 rounded-lg bg-cyan-500/15 flex items-center justify-center shrink-0"><Ic name="headphones" size={17} className="text-cyan-300" /></div>
+    <GlassCard className="p-3 flex items-center gap-3 group hover:scale-[1.02] transition-all duration-300">
+      {p.coverImage ? (
+        <img src={p.coverImage} alt={p.title} className="w-11 h-11 rounded-lg object-cover shrink-0" onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
+      ) : null}
+      <div className={`w-11 h-11 rounded-lg bg-cyan-500/15 flex items-center justify-center shrink-0 ${p.coverImage ? 'hidden' : 'flex'}`}>
+        <Ic name="headphones" size={17} className="text-cyan-300" />
+      </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-slate-100 truncate">{p.title}</p>
         {p.listenAt && <p className="text-[11px] text-cyan-300 mt-0.5 flex items-center gap-1"><Ic name="clock" size={11} />{formatWhen(p.listenAt)}</p>}
         {p.link && <a href={p.link} target="_blank" rel="noreferrer" className="text-[11px] text-fuchsia-300 flex items-center gap-1 mt-1">باز در اسپاتیفای <Ic name="external-link" size={11} /></a>}
         {p.fileData && <audio src={p.fileData} controls className="w-full h-8 mt-1.5" />}
       </div>
-      <button onClick={onToggleListened} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: p.listened ? "#22D3EE" : "rgba(255,255,255,.08)" }}>
+      <button onClick={onToggleListened} className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 hover:scale-110 transition-transform" style={{ background: p.listened ? "#22D3EE" : "rgba(255,255,255,.08)" }}>
         {p.listened && <Ic name="check" size={14} color="#0A0A0A" strokeWidth={3} />}
       </button>
-      <button onClick={() => onDelete(p.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-rose-400/80 hover:bg-rose-500/10 shrink-0"><Ic name="trash" size={13} /></button>
+      <button onClick={() => onDelete(p.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-rose-400/80 hover:bg-rose-500/10 shrink-0 hover:scale-110 transition-transform"><Ic name="trash" size={13} /></button>
     </GlassCard>
   );
 }
 function AddPodcastModal({ onClose, onAdd }) {
   const [source, setSource] = useState("link");
   const [link, setLink] = useState(""), [title, setTitle] = useState(""), [listenAt, setListenAt] = useState("");
+  const [coverImage, setCoverImage] = useState("");
   const [fileData, setFileData] = useState(null);
   const [fileName, setFileName] = useState("");
   const [fileTooBig, setFileTooBig] = useState(false);
@@ -1181,10 +1211,18 @@ function AddPodcastModal({ onClose, onAdd }) {
     reader.readAsDataURL(file);
   };
 
+  const onPickImage = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setCoverImage(reader.result);
+    reader.readAsDataURL(file);
+  };
+
   const submit = () => {
     if (source === "file" && !fileData) { setError("یه فایل صوتی انتخاب کن"); return; }
     if (source === "link" && !title.trim()) { setError("یه عنوان بنویس"); return; }
-    onAdd({ title: title.trim() || fileName || "پادکست", link: source === "link" ? link.trim() : "", fileData: source === "file" ? fileData : null, listenAt, listened: false });
+    onAdd({ title: title.trim() || fileName || "پادکست", link: source === "link" ? link.trim() : "", fileData: source === "file" ? fileData : null, coverImage, listenAt, listened: false });
     onClose();
   };
 
@@ -1208,6 +1246,22 @@ function AddPodcastModal({ onClose, onAdd }) {
         </div>
       )}
       {error && <p className="text-[11px] text-rose-400 mb-3">{error}</p>}
+      
+      {/* فیلد تصویر کاور */}
+      <div className="mb-3">
+        <label className="flex items-center justify-center gap-2 w-full border border-dashed border-white/15 rounded-xl py-3 text-sm text-slate-300 cursor-pointer hover:bg-white/5 transition-colors">
+          <Ic name="image" size={16} />
+          {coverImage ? "تصویر انتخاب شد" : "انتخاب تصویر کاور (اختیاری)"}
+          <input type="file" accept="image/*" onChange={onPickImage} className="hidden" />
+        </label>
+        {coverImage && (
+          <div className="mt-2 flex items-center gap-2">
+            <img src={coverImage} alt="preview" className="w-12 h-12 rounded-lg object-cover" />
+            <button onClick={() => setCoverImage("")} className="text-xs text-rose-400 hover:text-rose-300">حذف تصویر</button>
+          </div>
+        )}
+      </div>
+      
       <TextInput value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان اپیزود" />
       <p className="text-slate-400 text-xs mb-2">چه زمانی گوش بدم (اختیاری)</p>
       <input type="datetime-local" value={listenAt} onChange={(e) => setListenAt(e.target.value)}
@@ -1332,6 +1386,13 @@ function StudyProgress({ books, videos, podcasts }) {
 function StudyHub({ books, videos, podcasts, setBooks, setVideos, setPodcasts }) {
   const [sub, setSub] = useState("books");
   const [showAdd, setShowAdd] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
+
+  // آیتم‌های آرشیو شده (listened/watched)
+  const archivedPodcasts = podcasts.filter(p => p.listened);
+  const archivedVideos = videos.filter(v => v.watched);
+  const activePodcasts = podcasts.filter(p => !p.listened);
+  const activeVideos = videos.filter(v => !v.watched);
 
   return (
     <div className="space-y-4">
@@ -1354,20 +1415,76 @@ function StudyHub({ books, videos, podcasts, setBooks, setVideos, setPodcasts })
 
       {sub === "videos" && (
         <div>
-          {videos.length === 0 && <p className="text-xs text-slate-500 text-center py-4">هنوز ویدیویی اضافه نکردی</p>}
-          <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3">
-            {videos.map((v) => <VideoCard key={v.id} v={v} onToggleWatched={() => setVideos((p) => p.map((x) => x.id === v.id ? { ...x, watched: !x.watched } : x))} onDelete={(id) => setVideos((p) => p.filter((x) => x.id !== id))} />)}
-          </div>
+          {activeVideos.length === 0 && archivedVideos.length === 0 && <p className="text-xs text-slate-500 text-center py-4">هنوز ویدیویی اضافه نکردی</p>}
+          
+          {/* ویدیوهای فعال */}
+          {activeVideos.length > 0 && (
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-slate-200">ویدیوهای در انتظار</h3>
+              </div>
+              <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3">
+                {activeVideos.map((v) => <VideoCard key={v.id} v={v} onToggleWatched={() => setVideos((p) => p.map((x) => x.id === v.id ? { ...x, watched: !x.watched } : x))} onDelete={(id) => setVideos((p) => p.filter((x) => x.id !== id))} />)}
+              </div>
+            </>
+          )}
+          
+          {/* دکمه نمایش آرشیو */}
+          {archivedVideos.length > 0 && (
+            <button onClick={() => setShowArchive(!showArchive)} className="w-full mt-2.5 rounded-xl py-2.5 text-sm font-medium text-cyan-300 border border-cyan-500/20 flex items-center justify-center gap-1.5 hover:bg-cyan-500/10 transition-colors">
+              <Ic name={showArchive ? "eye-off" : "eye"} size={15} />
+              {showArchive ? 'مخفی کردن ویدیوهای دیده‌شده' : `مشاهده ویدیوهای دیده‌شده (${archivedVideos.length})`}
+            </button>
+          )}
+          
+          {/* آرشیو ویدیوها */}
+          {showArchive && archivedVideos.length > 0 && (
+            <div className="mt-4 opacity-70">
+              <h3 className="text-xs font-semibold text-slate-400 mb-2">آرشیو ویدیوهای دیده‌شده</h3>
+              <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3">
+                {archivedVideos.map((v) => <VideoCard key={v.id} v={v} onToggleWatched={() => setVideos((p) => p.map((x) => x.id === v.id ? { ...x, watched: !x.watched } : x))} onDelete={(id) => setVideos((p) => p.filter((x) => x.id !== id))} />)}
+              </div>
+            </div>
+          )}
+          
           <button onClick={() => setShowAdd(true)} className="w-full mt-2.5 rounded-xl py-3 text-sm font-medium text-slate-300 border border-dashed border-white/15 flex items-center justify-center gap-1.5"><Ic name="plus" size={15} /> افزودن ویدیو</button>
         </div>
       )}
 
       {sub === "podcasts" && (
         <div>
-          {podcasts.length === 0 && <p className="text-xs text-slate-500 text-center py-4">هنوز پادکستی اضافه نکردی</p>}
-          <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3">
-            {podcasts.map((p) => <PodcastCard key={p.id} p={p} onToggleListened={() => setPodcasts((prev) => prev.map((x) => x.id === p.id ? { ...x, listened: !x.listened } : x))} onDelete={(id) => setPodcasts((prev) => prev.filter((x) => x.id !== id))} />)}
-          </div>
+          {activePodcasts.length === 0 && archivedPodcasts.length === 0 && <p className="text-xs text-slate-500 text-center py-4">هنوز پادکستی اضافه نکردی</p>}
+          
+          {/* پادکست‌های فعال */}
+          {activePodcasts.length > 0 && (
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-slate-200">پادکست‌های در انتظار</h3>
+              </div>
+              <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3">
+                {activePodcasts.map((p) => <PodcastCard key={p.id} p={p} onToggleListened={() => setPodcasts((prev) => prev.map((x) => x.id === p.id ? { ...x, listened: !x.listened } : x))} onDelete={(id) => setPodcasts((prev) => prev.filter((x) => x.id !== id))} />)}
+              </div>
+            </>
+          )}
+          
+          {/* دکمه نمایش آرشیو */}
+          {archivedPodcasts.length > 0 && (
+            <button onClick={() => setShowArchive(!showArchive)} className="w-full mt-2.5 rounded-xl py-2.5 text-sm font-medium text-cyan-300 border border-cyan-500/20 flex items-center justify-center gap-1.5 hover:bg-cyan-500/10 transition-colors">
+              <Ic name={showArchive ? "eye-off" : "eye"} size={15} />
+              {showArchive ? 'مخفی کردن پادکست‌های شنیده‌شده' : `مشاهده پادکست‌های شنیده‌شده (${archivedPodcasts.length})`}
+            </button>
+          )}
+          
+          {/* آرشیو پادکست‌ها */}
+          {showArchive && archivedPodcasts.length > 0 && (
+            <div className="mt-4 opacity-70">
+              <h3 className="text-xs font-semibold text-slate-400 mb-2">آرشیو پادکست‌های شنیده‌شده</h3>
+              <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3">
+                {archivedPodcasts.map((p) => <PodcastCard key={p.id} p={p} onToggleListened={() => setPodcasts((prev) => prev.map((x) => x.id === p.id ? { ...x, listened: !x.listened } : x))} onDelete={(id) => setPodcasts((prev) => prev.filter((x) => x.id !== id))} />)}
+              </div>
+            </div>
+          )}
+          
           <button onClick={() => setShowAdd(true)} className="w-full mt-2.5 rounded-xl py-3 text-sm font-medium text-slate-300 border border-dashed border-white/15 flex items-center justify-center gap-1.5"><Ic name="plus" size={15} /> افزودن پادکست</button>
         </div>
       )}
@@ -2689,20 +2806,70 @@ function LifeFlowApp() {
         /* Broad, attribute-based overrides so the whole app (including deeper tab content
            we haven't individually re-themed yet) gets a legible light appearance, without
            having to rewrite every component's Tailwind classes by hand. */
-        [data-theme="light"]{ color:#2b2440; }
-        [data-theme="light"] .glass-panel{ background:linear-gradient(160deg, rgba(255,255,255,.75), rgba(255,255,255,.45) 60%, rgba(255,255,255,.6)); border-color:rgba(43,36,64,.10); box-shadow:0 8px 24px rgba(120,90,160,.12), inset 0 1px 0 rgba(255,255,255,.7); }
-        [data-theme="light"] .glass-strong{ background:linear-gradient(165deg, rgba(255,255,255,.85), rgba(255,255,255,.55)); border-color:rgba(43,36,64,.10); box-shadow:0 6px 18px rgba(120,90,160,.14), inset 0 1px 0 rgba(255,255,255,.8); }
-        [data-theme="light"] [class*="text-white"]{ color:#241f38 !important; }
-        [data-theme="light"] [class*="text-slate-2"]{ color:#453d5c !important; }
-        [data-theme="light"] [class*="text-slate-3"]{ color:#544a6e !important; }
-        [data-theme="light"] [class*="text-slate-4"]{ color:#6b6084 !important; }
-        [data-theme="light"] [class*="text-slate-5"]{ color:#847998 !important; }
-        [data-theme="light"] [class*="text-slate-6"]{ color:#948aa8 !important; }
-        [data-theme="light"] [class*="bg-white/"]{ background-color:rgba(43,36,64,.045) !important; }
-        [data-theme="light"] [class*="border-white/"]{ border-color:rgba(43,36,64,.12) !important; }
-        [data-theme="light"] [class*="bg-black"]{ background-color:rgba(255,255,255,.55) !important; }
-        [data-theme="light"] input, [data-theme="light"] textarea, [data-theme="light"] select{ color:#241f38; }
-        [data-theme="light"] ::placeholder{ color:#a89dbe !important; opacity:1; }
+        [data-theme="light"]{ color:#1a1a1a; }
+        [data-theme="light"] .glass-panel{ background:linear-gradient(160deg, rgba(255,255,255,.92), rgba(255,255,255,.85) 60%, rgba(255,255,255,.88)); border-color:rgba(43,36,64,.15); box-shadow:0 8px 24px rgba(120,90,160,.15), inset 0 1px 0 rgba(255,255,255,.9); }
+        [data-theme="light"] .glass-strong{ background:linear-gradient(165deg, rgba(255,255,255,.95), rgba(255,255,255,.88)); border-color:rgba(43,36,64,.15); box-shadow:0 6px 18px rgba(120,90,160,.18), inset 0 1px 0 rgba(255,255,255,.95); }
+        [data-theme="light"] [class*="text-white"]{ color:#1a1a1a !important; }
+        [data-theme="light"] [class*="text-slate-1"]{ color:#2a2a2a !important; }
+        [data-theme="light"] [class*="text-slate-2"]{ color:#3a3a3a !important; }
+        [data-theme="light"] [class*="text-slate-3"]{ color:#4a4a4a !important; }
+        [data-theme="light"] [class*="text-slate-4"]{ color:#5a5a5a !important; }
+        [data-theme="light"] [class*="text-slate-5"]{ color:#6a6a6a !important; }
+        [data-theme="light"] [class*="text-slate-6"]{ color:#7a7a7a !important; }
+        [data-theme="light"] [class*="bg-white/"]{ background-color:rgba(255,255,255,.9) !important; }
+        [data-theme="light"] [class*="border-white/"]{ border-color:rgba(43,36,64,.18) !important; }
+        [data-theme="light"] [class*="bg-black"]{ background-color:rgba(0,0,0,.05) !important; }
+        [data-theme="light"] input, [data-theme="light"] textarea, [data-theme="light"] select{ color:#1a1a1a; }
+        [data-theme="light"] ::placeholder{ color:#8a8a8a !important; opacity:1; }
+        
+        /* انیمیشن‌های مک استایل */
+        .glass-panel {
+          transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+          transform-style: preserve-3d;
+        }
+        
+        .glass-panel:hover {
+          transform: translateY(-4px) scale(1.01);
+          box-shadow: 0 20px 40px rgba(0,0,0,0.2), 0 0 30px rgba(192,38,211,0.15);
+        }
+        
+        /* افکت هوور سه‌بعدی برای دکمه‌ها */
+        button {
+          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+          position: relative;
+          overflow: hidden;
+        }
+        
+        button:hover {
+          transform: translateY(-2px) scale(1.03);
+          box-shadow: 0 8px 20px rgba(192,38,211,0.4);
+        }
+        
+        button:active {
+          transform: translateY(0) scale(0.98);
+        }
+        
+        /* جلوگیری از شفافیت بیش از حد دکمه‌ها */
+        button:not(.group\\/hover) {
+          min-opacity: 0.85;
+        }
+        
+        /* افکت گلو برای کارت‌ها در هوور */
+        .glass-panel::before {
+          content: '';
+          position: absolute;
+          inset: -1px;
+          background: linear-gradient(135deg, rgba(192,38,211,0.3), transparent, rgba(34,211,238,0.3));
+          border-radius: inherit;
+          opacity: 0;
+          transition: opacity 0.4s ease;
+          z-index: 0;
+          pointer-events: none;
+        }
+        
+        .glass-panel:hover::before {
+          opacity: 1;
+        }
       `}</style>
 
       {settings.theme === "dark" ? <GalaxyBackground /> : <LightBackground />}
