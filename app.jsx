@@ -478,7 +478,22 @@ function Ic({ name, size = 16, className = "", style = {}, color }) {
 }
 function GlassCard({ children, className = "" }) {
   return (
-    <div className={`glass-panel rounded-2xl overflow-hidden ${className}`}>
+    <div className={`glass-panel rounded-2xl overflow-hidden ${className}`}
+      style={{
+        transition: 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, border-color 0.3s ease',
+        transformStyle: 'preserve-3d',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-4px) scale(1.02) rotateX(2deg)';
+        e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.2), 0 0 20px rgba(192,38,211,0.15)';
+        e.currentTarget.style.borderColor = 'rgba(192,38,211,0.4)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0) scale(1) rotateX(0)';
+        e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(0,0,0,0.2)';
+        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)';
+      }}
+    >
       <div className="glass-sheen" />
       <div className="relative z-[1]">{children}</div>
     </div>
@@ -1053,14 +1068,16 @@ function AddBookModal({ onClose, onAdd }) {
   );
 }
 
-function VideoCard({ v, onToggleWatched, onDelete }) {
+function VideoCard({ v, onToggleWatched, onDelete, onPlay }) {
   return (
     <GlassCard className="p-3 flex gap-3">
       {v.videoId ? (
-        <a href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noreferrer" className="shrink-0 relative">
+        <div onClick={() => onPlay && onPlay(v)} className="shrink-0 relative cursor-pointer">
           <img src={`https://img.youtube.com/vi/${v.videoId}/hqdefault.jpg`} alt={v.title} className="w-24 h-16 object-cover rounded-lg" />
-          <span className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg"><Ic name="external-link" size={14} className="text-white" /></span>
-        </a>
+          <span className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg backdrop-blur-sm">
+            <Ic name="play" size={18} className="text-white" />
+          </span>
+        </div>
       ) : v.fileData ? (
         <video src={v.fileData} controls className="w-24 h-16 object-cover rounded-lg bg-black shrink-0" />
       ) : (
@@ -1070,9 +1087,9 @@ function VideoCard({ v, onToggleWatched, onDelete }) {
         <p className="text-sm text-slate-100 truncate">{v.title}</p>
         {v.watchAt && <p className="text-[11px] text-cyan-300 mt-0.5 flex items-center gap-1"><Ic name="clock" size={11} />{formatWhen(v.watchAt)}</p>}
         {v.videoId && (
-          <a href={`https://youtube.com/watch?v=${v.videoId}`} target="_blank" rel="noreferrer" className="text-[11px] text-fuchsia-300 flex items-center gap-1 mt-1">
-            مشاهده در یوتیوب <Ic name="external-link" size={11} />
-          </a>
+          <button onClick={() => onPlay && onPlay(v)} className="text-[11px] text-fuchsia-300 flex items-center gap-1 mt-1 hover:text-fuchsia-200 transition-colors">
+            پخش ویدیو <Ic name="play" size={11} />
+          </button>
         )}
         {v.fileData && <p className="text-[11px] text-slate-500 mt-1">فایل محلی (روی همین گوشی/مرورگر)</p>}
       </div>
@@ -1148,7 +1165,11 @@ function AddVideoModal({ onClose, onAdd }) {
 function PodcastCard({ p, onToggleListened, onDelete }) {
   return (
     <GlassCard className="p-3 flex items-center gap-3">
-      <div className="w-11 h-11 rounded-lg bg-cyan-500/15 flex items-center justify-center shrink-0"><Ic name="headphones" size={17} className="text-cyan-300" /></div>
+      {p.image ? (
+        <img src={p.image} alt={p.title} className="w-11 h-11 rounded-lg object-cover shrink-0" />
+      ) : (
+        <div className="w-11 h-11 rounded-lg bg-cyan-500/15 flex items-center justify-center shrink-0"><Ic name="headphones" size={17} className="text-cyan-300" /></div>
+      )}
       <div className="flex-1 min-w-0">
         <p className="text-sm text-slate-100 truncate">{p.title}</p>
         {p.listenAt && <p className="text-[11px] text-cyan-300 mt-0.5 flex items-center gap-1"><Ic name="clock" size={11} />{formatWhen(p.listenAt)}</p>}
@@ -1332,6 +1353,7 @@ function StudyProgress({ books, videos, podcasts }) {
 function StudyHub({ books, videos, podcasts, setBooks, setVideos, setPodcasts }) {
   const [sub, setSub] = useState("books");
   const [showAdd, setShowAdd] = useState(false);
+  const [playingVideo, setPlayingVideo] = useState(null);
 
   return (
     <div className="space-y-4">
@@ -1356,7 +1378,7 @@ function StudyHub({ books, videos, podcasts, setBooks, setVideos, setPodcasts })
         <div>
           {videos.length === 0 && <p className="text-xs text-slate-500 text-center py-4">هنوز ویدیویی اضافه نکردی</p>}
           <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3">
-            {videos.map((v) => <VideoCard key={v.id} v={v} onToggleWatched={() => setVideos((p) => p.map((x) => x.id === v.id ? { ...x, watched: !x.watched } : x))} onDelete={(id) => setVideos((p) => p.filter((x) => x.id !== id))} />)}
+            {videos.map((v) => <VideoCard key={v.id} v={v} onToggleWatched={() => setVideos((p) => p.map((x) => x.id === v.id ? { ...x, watched: !x.watched } : x))} onDelete={(id) => setVideos((p) => p.filter((x) => x.id !== id))} onPlay={(video) => setPlayingVideo(video)} />)}
           </div>
           <button onClick={() => setShowAdd(true)} className="w-full mt-2.5 rounded-xl py-3 text-sm font-medium text-slate-300 border border-dashed border-white/15 flex items-center justify-center gap-1.5"><Ic name="plus" size={15} /> افزودن ویدیو</button>
         </div>
@@ -1377,6 +1399,21 @@ function StudyHub({ books, videos, podcasts, setBooks, setVideos, setPodcasts })
       {showAdd && sub === "books" && <AddBookModal onClose={() => setShowAdd(false)} onAdd={(b) => setBooks((p) => [{ id: uid(), ...b }, ...p])} />}
       {showAdd && sub === "videos" && <AddVideoModal onClose={() => setShowAdd(false)} onAdd={(v) => setVideos((p) => [{ id: uid(), ...v }, ...p])} />}
       {showAdd && sub === "podcasts" && <AddPodcastModal onClose={() => setShowAdd(false)} onAdd={(pc) => setPodcasts((p) => [{ id: uid(), ...pc }, ...p])} />}
+      
+      {playingVideo && playingVideo.videoId && (
+        <ModalShell title={playingVideo.title || "پخش ویدیو"} onClose={() => setPlayingVideo(null)}>
+          <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+            <iframe
+              src={`https://www.youtube.com/embed/${playingVideo.videoId}?autoplay=1`}
+              className="absolute inset-0 w-full h-full rounded-xl"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              title={playingVideo.title}
+            />
+          </div>
+        </ModalShell>
+      )}
     </div>
   );
 }
@@ -2692,7 +2729,7 @@ function LifeFlowApp() {
         [data-theme="light"]{ color:#2b2440; }
         [data-theme="light"] .glass-panel{ background:linear-gradient(160deg, rgba(255,255,255,.75), rgba(255,255,255,.45) 60%, rgba(255,255,255,.6)); border-color:rgba(43,36,64,.10); box-shadow:0 8px 24px rgba(120,90,160,.12), inset 0 1px 0 rgba(255,255,255,.7); }
         [data-theme="light"] .glass-strong{ background:linear-gradient(165deg, rgba(255,255,255,.85), rgba(255,255,255,.55)); border-color:rgba(43,36,64,.10); box-shadow:0 6px 18px rgba(120,90,160,.14), inset 0 1px 0 rgba(255,255,255,.8); }
-        [data-theme="light"] [class*="text-white"]{ color:#241f38 !important; }
+        [data-theme="light"] [class*="text-white"]{ color:#241f38 !important; text-shadow: 0 0 1px rgba(0,0,0,0.1); }
         [data-theme="light"] [class*="text-slate-2"]{ color:#453d5c !important; }
         [data-theme="light"] [class*="text-slate-3"]{ color:#544a6e !important; }
         [data-theme="light"] [class*="text-slate-4"]{ color:#6b6084 !important; }
@@ -2703,6 +2740,9 @@ function LifeFlowApp() {
         [data-theme="light"] [class*="bg-black"]{ background-color:rgba(255,255,255,.55) !important; }
         [data-theme="light"] input, [data-theme="light"] textarea, [data-theme="light"] select{ color:#241f38; }
         [data-theme="light"] ::placeholder{ color:#a89dbe !important; opacity:1; }
+        /* Fix button visibility in light mode */
+        [data-theme="light"] button{ background-color: rgba(43,36,64,0.08) !important; color: #241f38 !important; border-color: rgba(43,36,64,0.15) !important; }
+        [data-theme="light"] button:hover{ background-color: rgba(43,36,64,0.12) !important; }
       `}</style>
 
       {settings.theme === "dark" ? <GalaxyBackground /> : <LightBackground />}
